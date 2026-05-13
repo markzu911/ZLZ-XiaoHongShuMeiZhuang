@@ -258,10 +258,41 @@ Output ONLY valid JSON format:
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    // You could add a toast notification here
-    alert('已复制到剪贴板');
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        alert('已复制到剪贴板');
+      } else {
+        throw new Error('Clipboard API unavailable');
+      }
+    } catch (err) {
+      // Fallback for non-secure contexts or certain iFrames
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Ensure the textarea is not visible but part of the document
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      
+      textArea.focus();
+      textArea.select();
+      
+      try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+          alert('已复制到剪贴板');
+        } else {
+          alert('复制失败，请尝试手动复制');
+        }
+      } catch (err) {
+        alert('无法访问剪贴板，请手动复制');
+      }
+      
+      document.body.removeChild(textArea);
+    }
   };
 
   return (
@@ -490,9 +521,7 @@ Output ONLY valid JSON format:
               <button 
                 onClick={() => {
                   const fullText = `${result.text}\n\n${result.tags.map(t => `#${t}`).join(' ')}`;
-                  navigator.clipboard.writeText(fullText).then(() => {
-                    alert('已复制到剪贴板');
-                  });
+                  copyToClipboard(fullText);
                 }}
                 className="w-full py-3 text-sm font-bold bg-slate-900 text-white rounded-xl shadow-sm hover:bg-black transition-colors"
               >
